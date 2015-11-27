@@ -92,7 +92,7 @@ var _ = Describe("Events", func() {
 					"involvedObject.kind":      "Pod",
 					"involvedObject.uid":       string(podWithUid.UID),
 					"involvedObject.namespace": framework.Namespace.Name,
-					"source":                   "scheduler",
+					"source":                   api.DefaultSchedulerName,
 				}.AsSelector(),
 				unversioned.ListOptions{},
 			)
