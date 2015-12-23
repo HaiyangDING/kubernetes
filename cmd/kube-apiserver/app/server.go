@@ -125,7 +125,9 @@ func NewAPIServer() *APIServer {
 	s := APIServer{
 		InsecurePort:           8080,
 		InsecureBindAddress:    net.ParseIP("127.0.0.1"),
+//		InsecureBindAddress:    net.ParseIP("10.229.42.121"),
 		BindAddress:            net.ParseIP("0.0.0.0"),
+//		BindAddress:            net.ParseIP("10.229.42.121"),
 		SecurePort:             6443,
 		APIPrefix:              "/api",
 		APIGroupPrefix:         "/apis",

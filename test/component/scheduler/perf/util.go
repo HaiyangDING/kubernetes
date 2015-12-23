@@ -17,9 +17,7 @@ limitations under the License.
 package benchmark
 
 import (
-	"net/http"
-	"net/http/httptest"
-
+	"fmt"
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/resource"
@@ -31,6 +29,9 @@ import (
 	_ "k8s.io/kubernetes/plugin/pkg/scheduler/algorithmprovider"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/factory"
 	"k8s.io/kubernetes/test/integration/framework"
+	"math/rand"
+	"net/http"
+	"net/http/httptest"
 )
 
 // mustSetupScheduler starts the following components:
@@ -41,6 +42,22 @@ import (
 // Notes on rate limiter:
 //   - The BindPodsRateLimiter is nil, meaning no rate limits.
 //   - client rate limit is set to 5000.
+
+const SpecNum = 5
+
+type PodSpec struct {
+	cpu    string
+	memory string
+}
+
+var PodSpecs = [SpecNum]PodSpec{
+	{"150m", "1500Mi"},
+	{"160m", "3000Mi"},
+	{"120m", "1400Mi"},
+	{"180m", "1500Mi"},
+	{"1000m", "1400Mi"},
+}
+
 func mustSetupScheduler() (schedulerConfigFactory *factory.ConfigFactory, destroyFunc func()) {
 	framework.DeleteAllEtcdKeys()
 
@@ -79,6 +96,7 @@ func mustSetupScheduler() (schedulerConfigFactory *factory.ConfigFactory, destro
 
 func makeNodes(c client.Interface, nodeCount int) {
 	glog.Infof("making %d nodes", nodeCount)
+
 	baseNode := &api.Node{
 		ObjectMeta: api.ObjectMeta{
 			GenerateName: "scheduler-test-node-",
@@ -88,7 +106,7 @@ func makeNodes(c client.Interface, nodeCount int) {
 		},
 		Status: api.NodeStatus{
 			Capacity: api.ResourceList{
-				api.ResourcePods:   *resource.NewQuantity(32, resource.DecimalSI),
+				api.ResourcePods:   *resource.NewQuantity(200, resource.DecimalSI),
 				api.ResourceCPU:    resource.MustParse("4"),
 				api.ResourceMemory: resource.MustParse("32Gi"),
 			},
@@ -110,49 +128,64 @@ func makeNodes(c client.Interface, nodeCount int) {
 // TODO: Setup pods evenly on all nodes and quickly/non-linearly.
 func makePods(c client.Interface, podCount int) {
 	glog.Infof("making %d pods", podCount)
-	basePod := &api.Pod{
-		ObjectMeta: api.ObjectMeta{
-			GenerateName: "scheduler-test-pod-",
-		},
-		Spec: api.PodSpec{
-			Containers: []api.Container{{
-				Name:  "pause",
-				Image: "gcr.io/google_containers/pause:1.0",
-				Resources: api.ResourceRequirements{
-					Limits: api.ResourceList{
-						api.ResourceCPU:    resource.MustParse("100m"),
-						api.ResourceMemory: resource.MustParse("500Mi"),
+	for i := 0; i < podCount; i++ {
+
+		var r int = rand.Intn(SpecNum)
+		// fmt.Printf("r is:%d.\n", r)
+
+		basePod := &api.Pod{
+			ObjectMeta: api.ObjectMeta{
+				GenerateName: "scheduler-test-pod-",
+			},
+			Spec: api.PodSpec{
+				Containers: []api.Container{{
+					Name:  "pause",
+					Image: "gcr.io/google_containers/pause:1.0",
+					Resources: api.ResourceRequirements{
+						Limits: api.ResourceList{
+							//api.ResourceCPU:    resource.MustParse("200m"),
+							api.ResourceCPU: resource.MustParse(PodSpecs[r].cpu),
+							//api.ResourceMemory: resource.MustParse("500Mi"),
+							api.ResourceMemory: resource.MustParse(PodSpecs[r].memory),
+						},
+						Requests: api.ResourceList{
+							//api.ResourceCPU:    resource.MustParse("200m"),
+							api.ResourceCPU: resource.MustParse(PodSpecs[r].cpu),
+							//api.ResourceMemory: resource.MustParse("500Mi"),
+							api.ResourceMemory: resource.MustParse(PodSpecs[r].memory),
+						},
 					},
-					Requests: api.ResourceList{
-						api.ResourceCPU:    resource.MustParse("100m"),
-						api.ResourceMemory: resource.MustParse("500Mi"),
-					},
-				},
-			}},
-		},
-	}
-	threads := 30
-	remaining := make(chan int, 1000)
-	go func() {
-		for i := 0; i < podCount; i++ {
-			remaining <- i
+				}},
+			},
 		}
-		close(remaining)
-	}()
-	for i := 0; i < threads; i++ {
-		go func() {
-			for {
-				_, ok := <-remaining
-				if !ok {
-					return
-				}
-				for {
-					_, err := c.Pods("default").Create(basePod)
-					if err == nil {
-						break
-					}
-				}
-			}
-		}()
+		_, err := c.Pods("default").Create(basePod)
+		if err != nil {
+			fmt.Printf("=== can not create pod.\n===")
+			break
+		}
 	}
+	//	threads := 30
+	//	remaining := make(chan int, 1000)
+	//	go func() {
+	//		for i := 0; i < podCount; i++ {
+	//			remaining <- i
+	//		}
+	//		close(remaining)
+	//	}()
+	//	for i := 0; i < threads; i++ {
+	//		go func() {
+	//			for {
+	//				_, ok := <-remaining
+	//				if !ok {
+	//					return
+	//				}
+	//				for {
+	//					_, err := c.Pods("default").Create(basePod)
+	//					if err == nil {
+	//						break
+	//					}
+	//				}
+	//			}
+	//		}()
+	//	}
 }

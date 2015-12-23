@@ -243,6 +243,7 @@ func PrioritizeNodes(pod *api.Pod, machinesToPods map[string][]*api.Pod, podList
 
 	for host, score := range combinedScores {
 		glog.V(10).Infof("Host %s Score %d", host, score)
+//		fmt.Printf("\n====scheduler pod: %s, score of host %s: %d\n", pod.Name, host, score)
 		result = append(result, schedulerapi.HostPriority{Host: host, Score: score})
 	}
 	return result, nil

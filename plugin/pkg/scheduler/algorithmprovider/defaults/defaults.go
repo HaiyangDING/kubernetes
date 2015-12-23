@@ -53,8 +53,10 @@ func init() {
 
 func defaultPredicates() sets.String {
 	return sets.NewString(
-		// Fit is defined based on the absence of port conflicts.
-		factory.RegisterFitPredicate("PodFitsHostPorts", predicates.PodFitsHostPorts),
+		/*
+			// Fit is defined based on the absence of port conflicts.
+			 factory.RegisterFitPredicate("PodFitsHostPorts", predicates.PodFitsHostPorts),
+		*/
 		// Fit is determined by resource availability.
 		factory.RegisterFitPredicateFactory(
 			"PodFitsResources",
@@ -62,35 +64,41 @@ func defaultPredicates() sets.String {
 				return predicates.NewResourceFitPredicate(args.NodeInfo)
 			},
 		),
-		// Fit is determined by non-conflicting disk volumes.
-		factory.RegisterFitPredicate("NoDiskConflict", predicates.NoDiskConflict),
-		// Fit is determined by node selector query.
-		factory.RegisterFitPredicateFactory(
-			"MatchNodeSelector",
-			func(args factory.PluginFactoryArgs) algorithm.FitPredicate {
-				return predicates.NewSelectorMatchPredicate(args.NodeInfo)
-			},
-		),
-		// Fit is determined by the presence of the Host parameter and a string match
-		factory.RegisterFitPredicate("HostName", predicates.PodFitsHost),
+		/*
+			// Fit is determined by non-conflicting disk volumes.
+			 factory.RegisterFitPredicate("NoDiskConflict", predicates.NoDiskConflict),
+			// Fit is determined by node selector query.
+					factory.RegisterFitPredicateFactory(
+						"MatchNodeSelector",
+						func(args factory.PluginFactoryArgs) algorithm.FitPredicate {
+							return predicates.NewSelectorMatchPredicate(args.NodeInfo)
+						},
+					),
+			// Fit is determined by the presence of the Host parameter and a string match
+			factory.RegisterFitPredicate("HostName", predicates.PodFitsHost),
+		*/
 	)
 }
 
-func defaultPriorities() sets.String {
+func defaultPriorities() sets.String {	
+	//var w_lrp int = 1
+	//var w_bru int = 0
 	return sets.NewString(
 		// Prioritize nodes by least requested utilization.
-		factory.RegisterPriorityFunction("LeastRequestedPriority", priorities.LeastRequestedPriority, 1),
+//		factory.RegisterPriorityFunction("LeastRequestedPriority", priorities.LeastRequestedPriority, 1),
 		// Prioritizes nodes to help achieve balanced resource usage
 		factory.RegisterPriorityFunction("BalancedResourceAllocation", priorities.BalancedResourceAllocation, 1),
-		// spreads pods by minimizing the number of pods (belonging to the same service or replication controller) on the same node.
-		factory.RegisterPriorityConfigFactory(
-			"SelectorSpreadPriority",
-			factory.PriorityConfigFactory{
-				Function: func(args factory.PluginFactoryArgs) algorithm.PriorityFunction {
-					return priorities.NewSelectorSpreadPriority(args.ServiceLister, args.ControllerLister)
-				},
-				Weight: 1,
-			},
-		),
+		/*
+			// spreads pods by minimizing the number of pods (belonging to the same service or replication controller) on the same node.
+			//		factory.RegisterPriorityConfigFactory(
+			//			"SelectorSpreadPriority",
+			//			factory.PriorityConfigFactory{
+			//				Function: func(args factory.PluginFactoryArgs) algorithm.PriorityFunction {
+			//					return priorities.NewSelectorSpreadPriority(args.ServiceLister, args.ControllerLister)
+			//				},
+			//				Weight: 1,
+			//			},
+			//		),
+		*/
 	)
 }

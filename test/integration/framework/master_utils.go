@@ -167,7 +167,8 @@ func NewIntegrationTestMasterConfig() *master.Config {
 	masterConfig := NewMasterConfig()
 	masterConfig.EnableCoreControllers = true
 	masterConfig.EnableIndex = true
-	masterConfig.PublicAddress = net.ParseIP("192.168.10.4")
+	//	masterConfig.PublicAddress = net.ParseIP("192.168.10.4")
+	masterConfig.PublicAddress = net.ParseIP("10.229.42.121")
 	return masterConfig
 }
 
