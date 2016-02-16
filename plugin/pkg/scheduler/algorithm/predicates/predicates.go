@@ -422,7 +422,7 @@ func podName(pod *api.Pod) string {
 }
 
 // PodFitsResources calculates fit based on requested, rather than used resources
-func (r *ResourceFit) PodFitsResources(pod *api.Pod, nodeName string, nodeInfo *schedulercache.NodeInfo) (bool, error) {
+func (r *NodeStatus) PodFitsResources(pod *api.Pod, nodeName string, nodeInfo *schedulercache.NodeInfo) (bool, error) {
 	info, err := r.info.GetNodeInfo(nodeName)
 	if err != nil {
 		return false, err
@@ -456,14 +456,14 @@ func (r *ResourceFit) PodFitsResources(pod *api.Pod, nodeName string, nodeInfo *
 }
 
 func NewResourceFitPredicate(info NodeInfo) algorithm.FitPredicate {
-	fit := &ResourceFit{
+	fit := &NodeStatus{
 		info: info,
 	}
 	return fit.PodFitsResources
 }
 
 func NewSelectorMatchPredicate(info NodeInfo) algorithm.FitPredicate {
-	selector := &NodeSelector{
+	selector := &NodeStatus{
 		info: info,
 	}
 	return selector.PodSelectorMatches
@@ -542,7 +542,7 @@ type NodeSelector struct {
 	info NodeInfo
 }
 
-func (n *NodeSelector) PodSelectorMatches(pod *api.Pod, nodeName string, nodeInfo *schedulercache.NodeInfo) (bool, error) {
+func (n *NodeStatus) PodSelectorMatches(pod *api.Pod, nodeName string, nodeInfo *schedulercache.NodeInfo) (bool, error) {
 	node, err := n.info.GetNodeInfo(nodeName)
 	if err != nil {
 		return false, err
@@ -734,4 +734,22 @@ func haveSame(a1, a2 []string) bool {
 		}
 	}
 	return false
+}
+
+type NodeStatus struct {
+	info NodeInfo
+}
+
+func GeneralPredicates(info NodeInfo) algorithm.FitPredicate {
+	node := &NodeStatus{
+		info: info,
+	}
+	return node.RunGeneralPredicates
+}
+
+func (node *NodeStatus) RunGeneralPredicates(pod *api.Pod, nodeName string, nodeInfo *schedulercache.NodeInfo) (bool, error) {
+	fit, err := node.PodFitsResources(pod, nodeName, nodeInfo)
+	fit, err = node.PodSelectorMatches(pod, nodeName, nodeInfo)
+	fit, err = PodFitsHost(pod, nodeName, nodeInfo)
+	return fit, err
 }

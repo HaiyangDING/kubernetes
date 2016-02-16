@@ -157,7 +157,7 @@ func TestPodFitsResources(t *testing.T) {
 	for _, test := range enoughPodsTests {
 		node := api.Node{Status: api.NodeStatus{Capacity: makeResources(10, 20, 32).Capacity, Allocatable: makeAllocatableResources(10, 20, 32)}}
 
-		fit := ResourceFit{FakeNodeInfo(node)}
+		fit := NodeStatus{FakeNodeInfo(node)}
 		fits, err := fit.PodFitsResources(test.pod, "machine", test.nodeInfo)
 		if !reflect.DeepEqual(err, test.wErr) {
 			t.Errorf("%s: unexpected error: %v, want: %v", test.test, err, test.wErr)
@@ -202,7 +202,7 @@ func TestPodFitsResources(t *testing.T) {
 	for _, test := range notEnoughPodsTests {
 		node := api.Node{Status: api.NodeStatus{Capacity: api.ResourceList{}, Allocatable: makeAllocatableResources(10, 20, 1)}}
 
-		fit := ResourceFit{FakeNodeInfo(node)}
+		fit := NodeStatus{FakeNodeInfo(node)}
 		fits, err := fit.PodFitsResources(test.pod, "machine", test.nodeInfo)
 		if !reflect.DeepEqual(err, test.wErr) {
 			t.Errorf("%s: unexpected error: %v, want: %v", test.test, err, test.wErr)
@@ -978,7 +978,7 @@ func TestPodFitsSelector(t *testing.T) {
 	for _, test := range tests {
 		node := api.Node{ObjectMeta: api.ObjectMeta{Labels: test.labels}}
 
-		fit := NodeSelector{FakeNodeInfo(node)}
+		fit := NodeStatus{FakeNodeInfo(node)}
 		fits, err := fit.PodSelectorMatches(test.pod, "machine", schedulercache.NewNodeInfo())
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
